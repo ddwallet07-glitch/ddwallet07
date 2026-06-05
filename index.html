@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Firebase Website</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        .container { max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { background: #007BFF; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        pre { background: #e9ecef; padding: 15px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>My Live Firebase Data Website</h2>
+    
+    <!-- BUTTONS TO READ AND WRITE -->
+    <button onclick="readDatabase()">🔄 Refresh Data From APK</button>
+    <button onclick="addData()">➕ Add Test Data</button>
+
+    <h3>Current Live Database Content:</h3>
+    <!-- THIS IS WHERE THE DATA WILL APPEAR -->
+    <pre id="database-content">Click 'Refresh Data' to load...</pre>
+</div>
+
+<script>
+    // Your exact Firebase JSON URL
+    const dbUrl = "https://xc04-52348-default-rtdb.firebaseio.com/.json";
+
+    // FUNCTION TO FETCH AND SHOW DATA
+    async function readDatabase() {
+        const displayArea = document.getElementById("database-content");
+        displayArea.innerText = "Loading data...";
+        try {
+            const response = await fetch(dbUrl);
+            const data = await response.json();
+            displayArea.innerText = JSON.stringify(data, null, 2);
+        } catch (error) {
+            displayArea.innerText = "Error loading data. Make sure database allows reads!";
+            console.error(error);
+        }
+    }
+
+    // FUNCTION TO SEND NEW DATA TO THE APK/DATABASE
+    async function addData() {
+        // Change this object to match what your APK needs!
+        const newData = {
+            website_user: "Web Visitor",
+            timestamp: new Date().toISOString(),
+            message: "Hello from the new website!"
+        };
+
+        try {
+            // "POST" creates a brand new item inside your database
+            const response = await fetch(dbUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newData)
+            });
+            
+            if(response.ok) {
+                alert("Data saved successfully!");
+                readDatabase(); // Refresh the list automatically
+            }
+        } catch (error) {
+            alert("Failed to write data. Check database write rules.");
+            console.error(error);
+        }
+    }
+
+    // Load the data automatically when page opens
+    window.onload = readDatabase;
+</script>
+
+</body>
+</html>
