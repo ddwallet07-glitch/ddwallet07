@@ -3,37 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Firebase Website</title>
+    <title>My Firebase Data Center</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
-        .container { max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        button { background: #007BFF; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
-        button:hover { background: #0056b3; }
-        pre { background: #e9ecef; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            margin: 15px; 
+            background-color: #f8f9fa; 
+            color: #212529;
+        }
+        .app-card { 
+            max-width: 600px; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08); 
+            margin: 0 auto;
+        }
+        h2 { color: #0d6efd; margin-top: 0; font-size: 22px; text-align: center; }
+        .actions { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { 
+            flex: 1;
+            background: #0d6efd; 
+            color: white; 
+            border: none; 
+            padding: 14px; 
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer; 
+            border-radius: 10px; 
+            transition: opacity 0.2s;
+        }
+        button:active { opacity: 0.8; }
+        button.add-btn { background: #198754; }
+        .status-box {
+            background: #e9ecef;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th { background-color: #f1f3f5; font-weight: 600; }
+        pre { 
+            background: #212529; 
+            color: #f8f9fa;
+            padding: 15px; 
+            border-radius: 10px; 
+            overflow-x: auto; 
+            font-size: 12px;
+            max-height: 250px;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>My Live Firebase Data Website</h2>
+<div class="app-card">
+    <h2>📱 Live Database Center</h2>
+    <div id="status" class="status-box">Tap Refresh to sync data</div>
     
-    <!-- BUTTONS TO READ AND WRITE -->
-    <button onclick="readDatabase()">🔄 Refresh Data From APK</button>
-    <button onclick="addData()">➕ Add Test Data</button>
+    <div class="actions">
+        <button onclick="fetchDatabase()">🔄 Refresh Data</button>
+        <button class="add-btn" onclick="sendTestData()">➕ Add New Data</button>
+    </div>
 
-    <h3>Current Live Database Content:</h3>
-    <!-- THIS IS WHERE THE DATA WILL APPEAR -->
-    <pre id="database-content">Click 'Refresh Data' to load...</pre>
+    <h3>📊 Formatted Table:</h3>
+    <table id="data-table">
+        <thead>
+            <tr>
+                <th>Device</th>
+                <th>Status</th>
+                <th>Time Logged</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <tr>
+                <td colspan="3" style="text-align:center; color:#6c757d;">No data loaded yet.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>💻 Raw Data Tree:</h3>
+    <pre id="raw-json">{}</pre>
 </div>
 
 <script>
-    // Your exact Firebase JSON URL
-    const dbUrl = "https://xc04-52348-default-rtdb.firebaseio.com/.json";
+    // Your verified Firebase JSON path
+    const targetUrl = "https://lalannew5-default-rtdb.firebaseio.com/.json";
 
-    // FUNCTION TO FETCH AND SHOW DATA
-    async function readDatabase() {
-        const displayArea = document.getElementById("database-content");
-        displayArea.innerText = "Loading data...";
+    // READ FUNCTION
+    async function fetchDatabase() {
+        const statusDiv = document.getElementById("status");
+        const rawPre = document.getElementById("raw-json");
+        const tableBody = document.getElementById("table-body");
+        
+        statusDiv.innerText = "⏳ Connecting to Firebase...";
+        statusDiv.style.background = "#fff3cd";
+        statusDiv.style.color = "#664d03";
+
+        try {
+            const res = await fetch(targetUrl);
+            const data = await res.json();
+            
+            if (!data) {
+                statusDiv.innerText = "✨ Database is empty! Ready for entries.";
+                statusDiv.style.background = "#cff4fc";
+                statusDiv.style.color = "#055160";
+                tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">Empty database node</td></tr>`;
+                rawPre.innerText = "{}";
+                return;
+            }
+
+            // Print the raw view
+            rawPre.innerText = JSON.stringify(data, null, 2);
+            
+            // Build the clean table view
+            tableBody.innerHTML = "";
+            
+            // Firebase lists items using random keys, we loop through them here
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                // Check if the item contains expected properties before rendering
+                if(item.device || item.status || item.time) {
+                    const row = `<tr>
+                        <td><b>${item.device || 'Unknown'}</b></td>
+                        <td>${item.status || 'N/A'}</td>
+                        <td>${item.time || 'N/A'}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                }
+            });
+
+            statusDiv.innerText = "✅ Data Successfully Synced!";
+            statusDiv.style.background = "#d1e7dd";
+            statusDiv.style.color = "#0f5132";
+
+        } catch (err) {
+            statusDiv.innerText = "❌ Connection Denied. Check Firebase rules!";
+            statusDiv.style.background = "#f8d7da";
+            statusDiv.style.color = "#842029";
+            console.error(err);
+        }
+    }
+
+    // WRITE FUNCTION
+    async function sendTestData() {
+        const payload = {
+            device: "Android Smartphone",
+            status: "Online Dashboard",
+            time: new Date().toLocaleTimeString()
+        };
+
+        try {
+            const res = await fetch(targetUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            
+            if (res.ok) {
+                fetchDatabase(); // Instantly update view
+            } else {
+                alert("Write failed. Please set rules to true inside Firebase.");
+            }
+        } catch (err) {
+            alert("Error trying to push data.");
+            console.error(err);
+        }
+    }
+
+    // Auto-fetch data upon launching website
+    window.onload = fetchDatabase;
+</script>
+
+</body>
+</html>
         try {
             const response = await fetch(dbUrl);
             const data = await response.json();
